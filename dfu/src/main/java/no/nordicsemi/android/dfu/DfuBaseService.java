@@ -873,7 +873,7 @@ public abstract class DfuBaseService extends IntentService {
 				 * - send the next packet, if notification is not required at that moment, or
 				 * - do nothing, because we have to wait for the notification to confirm the data received
 				 */
-				if (DFU_PACKET_UUID.equals(characteristic.getUuid())) {
+				if (getDfuPacketUuid().equals(characteristic.getUuid())) {
 					if (mImageSizeSent && mInitPacketSent) {
 						// If the PACKET characteristic was written with image data, update counters
 						mBytesSent += characteristic.getValue().length;
@@ -972,7 +972,7 @@ public abstract class DfuBaseService extends IntentService {
 
 			switch (responseType) {
 				case OP_CODE_PACKET_RECEIPT_NOTIF_KEY:
-					final BluetoothGattCharacteristic packetCharacteristic = gatt.getService(DFU_SERVICE_UUID).getCharacteristic(DFU_PACKET_UUID);
+					final BluetoothGattCharacteristic packetCharacteristic = gatt.getService(getDfuServiceUuid()).getCharacteristic(getDfuPacketUuid());
 
 					try {
 						mBytesConfirmed = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 1);
@@ -1328,15 +1328,15 @@ public abstract class DfuBaseService extends IntentService {
 			intent.putExtra(EXTRA_ATTEMPT, 0);
 
 			// We have connected to DFU device and services are discoverer
-			final BluetoothGattService dfuService = gatt.getService(DFU_SERVICE_UUID); // there was a case when the service was null. I don't know why
+			final BluetoothGattService dfuService = gatt.getService(getDfuServiceUuid()); // there was a case when the service was null. I don't know why
 			if (dfuService == null) {
 				loge("DFU service does not exists on the device");
 				sendLogBroadcast(LOG_LEVEL_WARNING, "Connected. DFU Service not found");
 				terminateConnection(gatt, ERROR_SERVICE_NOT_FOUND);
 				return;
 			}
-			final BluetoothGattCharacteristic controlPointCharacteristic = dfuService.getCharacteristic(DFU_CONTROL_POINT_UUID);
-			final BluetoothGattCharacteristic packetCharacteristic = dfuService.getCharacteristic(DFU_PACKET_UUID);
+			final BluetoothGattCharacteristic controlPointCharacteristic = dfuService.getCharacteristic(getDfuControlPointUuid());
+			final BluetoothGattCharacteristic packetCharacteristic = dfuService.getCharacteristic(getDfuPacketUuid());
 			if (controlPointCharacteristic == null || packetCharacteristic == null) {
 				loge("DFU characteristics not found in the DFU service");
 				sendLogBroadcast(LOG_LEVEL_WARNING, "Connected. DFU Characteristics not found");
@@ -2937,6 +2937,33 @@ public abstract class DfuBaseService extends IntentService {
 	 * @return the target activity class
 	 */
 	protected abstract Class<? extends Activity> getNotificationTarget();
+
+	/**
+	 * This method allows you to override the DFU_SERVICE_UUID value if need be.
+	 *
+	 * @return the desired DFU service uuid
+	 */
+	protected UUID getDfuServiceUuid() {
+		return DFU_SERVICE_UUID;
+	}
+
+	/**
+	 * This method allows you to override the DFU_CONTROL_POINT_UUID value if need be.
+	 *
+	 * @return the desired DFU control point uuid
+	 */
+	protected UUID getDfuControlPointUuid() {
+		return DFU_CONTROL_POINT_UUID;
+	}
+
+	/**
+	 * This method allows you to override the DFU_PACKET_UUID value if need be.
+	 *
+	 * @return the desired DFU packet uuid
+	 */
+	protected UUID getDfuPacketUuid() {
+		return DFU_PACKET_UUID;
+	}
 
 	private void sendProgressBroadcast(final int progress) {
 		final long now = SystemClock.elapsedRealtime();
